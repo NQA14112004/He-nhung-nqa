@@ -1,0 +1,227 @@
+body {
+    font-family: 'Arial', sans-serif;
+    text-align: center;
+    background-color: #e6f0fa;
+    margin: 0;
+    padding: 20px;
+    color: #333;
+    box-sizing: border-box; /* Đảm bảo padding và border không làm tăng kích thước */
+}
+
+h1 {
+    color: #2c3e50;
+    margin-bottom: 20px;
+    font-size: 28px;
+}
+
+.container {
+    background-color: #ffffff;
+    padding: 20px;
+    border-radius: 15px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    max-width: 500px;
+    width: 90%; /* Đảm bảo container không vượt quá 90% chiều rộng màn hình */
+    margin: 0 auto;
+    box-sizing: border-box;
+}
+
+.time {
+    font-size: 18px;
+    margin: 10px 0;
+    padding: 10px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+}
+
+.schedule {
+    margin: 15px 0;
+    font-size: 16px;
+    background-color: #f1f8ff;
+    padding: 10px;
+    border-radius: 8px;
+}
+
+.schedule-input {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+    flex-wrap: wrap; 
+    gap: 10px; 
+}
+
+.schedule-input input[type="time"] {
+    padding: 5px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 14px;
+    width: 120px; /* Đặt chiều rộng cố định cho input */
+}
+
+.schedule-input button {
+    padding: 8px 15px;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.schedule-input button:hover {
+    background-color: #2980b9;
+}
+
+.data {
+    margin: 15px 0;
+    font-size: 18px;
+    display: flex;
+    justify-content: space-between;
+    padding: 10px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+}
+
+.status {
+    font-weight: bold;
+    font-size: 20px;
+    margin: 20px 0;
+    padding: 10px;
+    border-radius: 8px;
+}
+
+.raining {
+    color: #e74c3c;
+    background-color: #ffe6e6;
+}
+
+.not-raining {
+    color: #27ae60;
+    background-color: #e6ffed;
+}
+
+.servo-position {
+    font-size: 18px;
+    margin: 10px 0;
+    padding: 10px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+}
+
+.mode {
+    font-size: 16px;
+    margin: 10px 0;
+    padding: 8px;
+    border-radius: 8px;
+    color: white;
+}
+
+.mode-auto {
+    background-color: #2ecc71;
+}
+
+.mode-manual {
+    background-color: #f1c40f;
+}
+
+.control {
+    margin-top: 20px;
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap; /* Cho phép các nút xuống dòng trên màn hình nhỏ */
+}
+
+button {
+    padding: 12px 25px;
+    font-size: 16px;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+button:hover {
+    background-color: #2980b9;
+}
+
+.auto-button {
+    background-color: #2ecc71;
+}
+
+.auto-button:hover {
+    background-color: #27ae60;
+}
+
+/* Responsive Design cho điện thoại */
+@media (max-width: 600px) {
+    body {
+        padding: 10px; /* Giảm padding trên màn hình nhỏ */
+    }
+
+    h1 {
+        font-size: 24px; /* Giảm kích thước tiêu đề */
+    }
+
+    .container {
+        padding: 15px;
+        max-width: 100%; /* Đảm bảo container chiếm toàn bộ chiều rộng */
+    }
+
+    .time, .schedule, .data, .servo-position, .mode {
+        font-size: 14px; /* Giảm kích thước chữ */
+        padding: 8px;
+    }
+
+    .status {
+        font-size: 16px; /* Giảm kích thước chữ cho trạng thái */
+        padding: 8px;
+    }
+
+    .schedule-input {
+        flex-direction: column; /* Xếp dọc các input trên màn hình nhỏ */
+        align-items: stretch;
+    }
+
+    .schedule-input input[type="time"] {
+        width: 100%; /* Input chiếm toàn bộ chiều rộng */
+        margin-bottom: 10px;
+    }
+
+    .schedule-input button {
+        width: 100%; /* Nút chiếm toàn bộ chiều rộng */
+        padding: 10px;
+    }
+
+    .data {
+        flex-direction: column; /* Xếp dọc dữ liệu nhiệt độ và độ ẩm */
+        gap: 10px;
+    }
+
+    button {
+        padding: 10px 20px;
+        font-size: 14px; /* Giảm kích thước chữ của nút */
+        width: 100%; /* Nút chiếm toàn bộ chiều rộng */
+        box-sizing: border-box;
+    }
+}
+
+@media (max-width: 400px) {
+    h1 {
+        font-size: 20px; /* Giảm thêm kích thước tiêu đề trên màn hình rất nhỏ */
+    }
+
+    .time, .schedule, .data, .servo-position, .mode {
+        font-size: 12px; /* Giảm thêm kích thước chữ */
+    }
+
+    .status {
+        font-size: 14px;
+    }
+
+    button {
+        padding: 8px 15px;
+        font-size: 12px;
+    }
+}
