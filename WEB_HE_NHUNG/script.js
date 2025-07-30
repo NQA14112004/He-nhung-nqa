@@ -66,6 +66,7 @@ database.ref("/servo/manual").on("value", (snapshot) => {
     console.error("Lỗi khi đọc dữ liệu từ /servo/manual:", error);
 });
 
+// Listen for changes in schedule
 database.ref("/schedule/phoi").on("value", (snapshot) => {
     const phoiTime = snapshot.val();
     schedulePhoiElement.textContent = phoiTime || "6:00";
@@ -78,6 +79,14 @@ database.ref("/schedule/thu").on("value", (snapshot) => {
     scheduleThuElement.textContent = thuTime || "18:00";
 }, (error) => {
     console.error("Lỗi khi đọc dữ liệu từ /schedule/thu:", error);
+});
+
+// Listen for changes in current time from Firebase
+database.ref("/time/current").on("value", (snapshot) => {
+    const currentTime = snapshot.val();
+    currentTimeElement.textContent = currentTime || "N/A";
+}, (error) => {
+    console.error("Lỗi khi đọc thời gian từ /time/current:", error);
 });
 
 // Manual servo control using Firebase
@@ -129,16 +138,3 @@ function saveSchedule() {
         alert("Vui lòng nhập đầy đủ thời gian phơi và thu!");
     }
 }
-
-// Cập nhật thời gian hiện tại
-function updateCurrentTime() {
-    const now = new Date();
-    const hours = String(now.getHours()).padStart(2, '0');
-    const minutes = String(now.getMinutes()).padStart(2, '0');
-    const seconds = String(now.getSeconds()).padStart(2, '0');
-    currentTimeElement.textContent = `${hours}:${minutes}:${seconds}`;
-}
-
-// Cập nhật thời gian mỗi giây
-setInterval(updateCurrentTime, 1000);
-updateCurrentTime();

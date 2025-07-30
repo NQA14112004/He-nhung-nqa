@@ -3,8 +3,8 @@
 #include <Servo.h>
 #include <DHT.h>
 #include <FirebaseESP8266.h>
-#include <NTPClient.h>
-#include <WiFiUdp.h>
+#include <Wire.h>
+#include <RTClib.h>
 
 // Chân kết nối
 #define DHTPIN 2
@@ -12,6 +12,8 @@
 #define RAIN_SENSOR_PIN 14
 #define SERVO_PIN 12
 #define LED_PIN 4
+#define SDA_PIN 0 // D3 trên ESP8266
+#define SCL_PIN 5 // D1 trên ESP8266
 
 // Thông tin WiFi
 const char* ssid = "TP-LINK_7ED0";
@@ -21,10 +23,10 @@ const char* password = "86205245";
 #define FIREBASE_HOST "https://btl-he-nhung-ngoquanganh-default-rtdb.asia-southeast1.firebasedatabase.app"
 #define FIREBASE_AUTH "eVMIYK0VbtN2y4LX4xBVINtW4dlqzs0DO9OwiyJ6"
 
-// Cấu hình NTP
-WiFiUDP ntpUDP;
-NTPClient timeClient(ntpUDP, "pool.ntp.org", 7 * 3600, 60000); // UTC+7 (Việt Nam), cập nhật mỗi 60 giây
+// Khởi tạo RTC
+RTC_DS1307 rtc;
 
+// Firebase
 FirebaseConfig config;
 FirebaseAuth auth;
 FirebaseData fbData;
@@ -62,10 +64,21 @@ void setup() {
   pinMode(RAIN_SENSOR_PIN, INPUT);
   pinMode(LED_PIN, OUTPUT);
 
+  // Khởi động I2C và RTC
+  Wire.begin(SDA_PIN, SCL_PIN);
+  if (!rtc.begin()) {
+    Serial.println("Không tìm thấy RTC!");
+    while (1);
+  }
+  if (!rtc.isrunning()) {
+    Serial.println("RTC không chạy, cài đặt thời gian!");
+    rtc.adjust(DateTime(2025, 7, 28, 10, 0, 0));
+  }
+
   dht.begin();
   delay(2000);
   servo.attach(SERVO_PIN);
-  servo.write(0);  // Vị trí ban đầu: phơi quần áo
+  servo.write(0);
 
   // Kết nối WiFi
   WiFi.begin(ssid, password);
@@ -79,11 +92,6 @@ void setup() {
   Serial.println("WiFi đã kết nối!");
   Serial.println("Địa chỉ IP của ESP8266: " + WiFi.localIP().toString());
   digitalWrite(LED_PIN, HIGH);
-
-  // Khởi động NTP
-  timeClient.begin();
-  timeClient.update();
-  Serial.println("Thời gian hiện tại: " + timeClient.getFormattedTime());
 
   // Cấu hình Firebase
   config.host = FIREBASE_HOST;
@@ -117,14 +125,21 @@ void setup() {
       humidity = -1;
     }
 
+    DateTime now = rtc.now();
+    String currentTime = String(now.hour(), DEC) + ":" + 
+                         (now.minute() < 10 ? "0" : "") + String(now.minute(), DEC) + ":" + 
+                         (now.second() < 10 ? "0" : "") + String(now.second(), DEC);
+
     Firebase.setFloat(fbData, "/sensor/temperature", temperature);
     Firebase.setFloat(fbData, "/sensor/humidity", humidity);
     Firebase.setBool(fbData, "/sensor/rain", isRaining);
+    Firebase.setString(fbData, "/time/current", currentTime);
 
     String json = "{";
     json += "\"temperature\": " + String(temperature) + ",";
     json += "\"humidity\": " + String(humidity) + ",";
-    json += "\"rain\": " + String(isRaining ? "true" : "false");
+    json += "\"rain\": " + String(isRaining ? "true" : "false") + ",";
+    json += "\"time\": \"" + currentTime + "\"";
     json += "}";
 
     AsyncWebServerResponse *response = request->beginResponse(200, "application/json", json);
@@ -139,8 +154,18 @@ void setup() {
 }
 
 void loop() {
-  // Cập nhật thời gian
-  timeClient.update();
+  // Đọc thời gian từ RTC
+  DateTime now = rtc.now();
+  String currentTime = String(now.hour(), DEC) + ":" + 
+                       (now.minute() < 10 ? "0" : "") + String(now.minute(), DEC) + ":" + 
+                       (now.second() < 10 ? "0" : "") + String(now.second(), DEC);
+  
+  // Gửi thời gian lên Firebase
+  if (!Firebase.setString(fbData, "/time/current", currentTime)) {
+    Serial.println("Lỗi gửi thời gian: " + fbData.errorReason());
+  } else {
+    Serial.println("Thời gian hiện tại: " + currentTime);
+  }
 
   // Đọc dữ liệu cảm biến
   float temperature = dht.readTemperature();
@@ -192,23 +217,10 @@ void loop() {
     Serial.println("Lỗi đọc /schedule/thu: " + fbData.errorReason());
   }
 
-  // Tự động điều khiển servo dựa trên trạng thái mưa, nhưng chỉ khi không ở chế độ thủ công
-  if (!isManual && isRaining != lastRainState) {
-    if (isRaining) {
-      // Trời mưa: Thu quần áo (góc 180°)
-      if (!Firebase.setInt(fbData, "/servo/position", 180)) {
-        Serial.println("Lỗi gửi vị trí servo (trời mưa): " + fbData.errorReason());
-      } else {
-        Serial.println("Trời mưa: Cập nhật vị trí servo trên Firebase: Góc = 180");
-      }
-    }
-    lastRainState = isRaining;
-  }
-
   // Kiểm tra thời gian để hẹn giờ
-  int currentHour = timeClient.getHours();
-  int currentMinute = timeClient.getMinutes();
-  int currentSecond = timeClient.getSeconds();
+  int currentHour = now.hour();
+  int currentMinute = now.minute();
+  int currentSecond = now.second();
 
   // Chuyển đổi thời gian hẹn giờ từ chuỗi (HH:MM) thành giờ và phút
   int phoiHour = phoiTime.substring(0, 2).toInt();
@@ -216,23 +228,49 @@ void loop() {
   int thuHour = thuTime.substring(0, 2).toInt();
   int thuMinute = thuTime.substring(3, 5).toInt();
 
-  // Hẹn giờ phơi quần áo
-  if (currentHour == phoiHour && currentMinute == phoiMinute && currentSecond <= 2 && !scheduledPhơi) {
-    if (!Firebase.setInt(fbData, "/servo/position", 0)) {
-      Serial.println("Lỗi gửi vị trí servo (hẹn giờ phơi): " + fbData.errorReason());
-    } else {
-      Serial.println("Hẹn giờ " + phoiTime + ": Phơi quần áo - Cập nhật vị trí servo trên Firebase: Góc = 0");
-      scheduledPhơi = true;
-    }
-  }
+  // Tính thời gian hiện tại và thời gian hẹn giờ dưới dạng phút để so sánh
+  int currentMinutes = currentHour * 60 + currentMinute;
+  int phoiMinutes = phoiHour * 60 + phoiMinute;
+  int thuMinutes = thuHour * 60 + thuMinute;
 
-  // Hẹn giờ thu quần áo
-  if (currentHour == thuHour && currentMinute == thuMinute && currentSecond <= 2 && !scheduledThu) {
-    if (!Firebase.setInt(fbData, "/servo/position", 180)) {
-      Serial.println("Lỗi gửi vị trí servo (hẹn giờ thu): " + fbData.errorReason());
-    } else {
-      Serial.println("Hẹn giờ " + thuTime + ": Thu quần áo - Cập nhật vị trí servo trên Firebase: Góc = 180");
-      scheduledThu = true;
+  // Chế độ tự động: Điều khiển servo dựa trên lịch và trạng thái mưa
+  if (!isManual) {
+    // Trong khoảng thời gian phơi (từ phoiTime đến thuTime)
+    if (currentMinutes >= phoiMinutes && currentMinutes < thuMinutes) {
+      if (isRaining && !lastRainState) {
+        // Trời mưa: Thu quần áo
+        if (!Firebase.setInt(fbData, "/servo/position", 180)) {
+          Serial.println("Lỗi gửi vị trí servo (trời mưa): " + fbData.errorReason());
+        } else {
+          Serial.println("Trời mưa: Cập nhật vị trí servo trên Firebase: Góc = 180");
+        }
+      } else if (!isRaining && lastRainState) {
+        // Trời tạnh: Phơi lại quần áo
+        if (!Firebase.setInt(fbData, "/servo/position", 0)) {
+          Serial.println("Lỗi gửi vị trí servo (trời tạnh): " + fbData.errorReason());
+        } else {
+          Serial.println("Trời tạnh: Cập nhật vị trí servo trên Firebase: Góc = 0");
+        }
+      }
+      lastRainState = isRaining;
+    }
+    // Hẹn giờ phơi quần áo
+    if (currentHour == phoiHour && currentMinute == phoiMinute && currentSecond <= 2 && !scheduledPhơi) {
+      if (!Firebase.setInt(fbData, "/servo/position", 0)) {
+        Serial.println("Lỗi gửi vị trí servo (hẹn giờ phơi): " + fbData.errorReason());
+      } else {
+        Serial.println("Hẹn giờ " + phoiTime + ": Phơi quần áo - Cập nhật vị trí servo trên Firebase: Góc = 0");
+        scheduledPhơi = true;
+      }
+    }
+    // Hẹn giờ thu quần áo
+    if (currentHour == thuHour && currentMinute == thuMinute && currentSecond <= 2 && !scheduledThu) {
+      if (!Firebase.setInt(fbData, "/servo/position", 180)) {
+        Serial.println("Lỗi gửi vị trí servo (hẹn giờ thu): " + fbData.errorReason());
+      } else {
+        Serial.println("Hẹn giờ " + thuTime + ": Thu quần áo - Cập nhật vị trí servo trên Firebase: Góc = 180");
+        scheduledThu = true;
+      }
     }
   }
 
@@ -257,7 +295,6 @@ void loop() {
 
   if (isRaining) {
     Serial.println("Trời đang mưa! Đang thu quần áo...");
-    // Nhấp nháy LED cảnh báo
     for (int i = 0; i < 5; i++) {
       digitalWrite(LED_PIN, HIGH);
       delay(200);
@@ -265,7 +302,7 @@ void loop() {
       delay(200);
     }
   } else {
-    digitalWrite(LED_PIN, HIGH); // LED sáng bình thường khi không mưa
+    digitalWrite(LED_PIN, HIGH);
   }
 
   delay(2000);

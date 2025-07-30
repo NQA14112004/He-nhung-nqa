@@ -3,32 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Weather Monitoring and Servo Control</title>
+    <title>Weather Monitoring System</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
         <h1>Weather Monitoring System</h1>
-        <div class="time">
-            <p>Thời gian hiện tại: <span id="currentTime">Loading...</span></p>
-        </div>
+        <div class="time">Thời gian hiện tại: <span id="currentTime">Loading...</span></div>
         <div class="schedule">
-            <p>Lịch hẹn giờ:</p>
-            <p>Phơi quần áo: <span id="schedulePhoi">6:00</span> | Thu quần áo: <span id="scheduleThu">18:00</span></p>
+            Lịch hẹn giờ:
+            <div>Phơi quần áo: <span id="schedulePhoi">6:00</span> | Thu quần áo: <span id="scheduleThu">18:00</span></div>
             <div class="schedule-input">
-                <input type="time" id="phoiTime" value="06:00">
-                <input type="time" id="thuTime" value="18:00">
+                <input type="time" id="phoiTime">
+                <input type="time" id="thuTime">
                 <button onclick="saveSchedule()">Lưu lịch hẹn giờ</button>
             </div>
         </div>
         <div class="data">
-            <p>Nhiệt độ: <span id="temperature">Loading...</span> °C</p>
-            <p>Độ ẩm: <span id="humidity">Loading...</span> %</p>
+            <div>Nhiệt độ: <span id="temperature">Loading...</span> °C</div>
+            <div>Độ ẩm: <span id="humidity">Loading...</span> %</div>
         </div>
         <div class="status" id="rainMessage">Checking weather...</div>
-        <div class="servo-position">
-            <p>Vị trí servo: <span id="servoPosition">Loading...</span>°</p>
-        </div>
+        <div class="servo-position">Vị trí servo: <span id="servoPosition">Loading...</span>°</div>
         <div class="mode" id="modeStatus">Chế độ: Loading...</div>
         <div class="control">
             <button onclick="moveServo(0)">Phơi quần áo</button>
@@ -36,10 +32,8 @@
             <button class="auto-button" onclick="setAutoMode()">Tự động</button>
         </div>
     </div>
-
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
